@@ -25,13 +25,16 @@
   )
     (:gen-class))
 
-(defn lazy-lines 
+(defn lazy-helper
+  "Processes a java.io.Reader lazily"
+  [reader]
+  (lazy-seq
+    (if-let [line (.readLine reader)]
+      (cons line (lazy-helper reader))
+      (do (.close reader) nil))))
+
+(defn lazy-lines
   "Return a lazy sequence with the lines of the file"
   [^String file]
-  (letfn [(helper [rdr]
-                  (lazy-seq
-                    (if-let [line (.readLine rdr)]
-                      (cons line (helper rdr))
-                      (do (.close rdr) nil))))]
-         (helper (io/reader file))))
+  (lazy-helper (io/reader file)))
 
