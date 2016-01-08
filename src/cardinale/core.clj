@@ -21,13 +21,15 @@
         :author "Istvan Szukacs"}
   cardinale.core
   (:require 
-    [cardinale.hashing  :as hashing                   ]
-    [cardinale.indexing :as indexing                  ]
-    [cardinale.fileio   :as fileio                    ]
-    [cardinale.serde    :as serde                     ]
-    [clojure.string     :as str                       ]
-    [clojure.set        :refer  [intersection union]  ]
-    [bigml.sketchy      [hyper-loglog :as hll]        ]
+    [cardinale.hashing          :as hashing                   ]
+    [cardinale.indexing         :as indexing                  ]
+    [cardinale.fileio           :as fileio                    ]
+    [cardinale.serde            :as serde                     ]
+    [cardinale.cli              :as cli                       ]
+    [clojure.string             :as strn                      ]
+    [clojure.tools.logging      :as log                       ]
+    [clojure.set                :refer  [intersection union]  ]
+    [bigml.sketchy.hyper-loglog :as hll                       ]
   )
   (:import
     [com.google.common.primitives Bytes UnsignedLongs UnsignedInts    ]
@@ -49,14 +51,15 @@
   "Set all the bits in the Bitmap based on a #{int ... int}"
   [int-set] 
   (let [bm (EWAHCompressedBitmap.)] 
-    (doseq [h int-set] (.set bm h))
+    (doseq [h int-set] 
+      (.set bm h))
     bm))
 
 (defn reading-log-file 
   [file] 
   (let [
           file-lines      (fileio/lazy-lines file)
-          split-entries   (map #(str/split % #"\ ") file-lines)
+          split-entries   (map #(strn/split % #"\ ") file-lines)
           int-seq         (map #(indexing/get-index (nth % 3)) split-entries)
           int-set         (set int-seq) ]
   ;set
@@ -65,19 +68,30 @@
 (defn -main 
   [& args]
   (let [
-        int-set       (reading-log-file "resources/test_huge.log")
-        ;bit-set       (bitset  int-set)
-        bit-map        (bitmap  int-set)
-        hyper-loglog   (hll/into 
-                        (hll/create 0.03) 
-                        int-set)
+        ;; cli & config
+        cli-options-parsed                          (cli/process-cli args cli/cli-options)
+        {:keys [options arguments errors summary]}  cli-options-parsed
+        config                                      (cli/process-config (:config options))
+        ;; business logic
+        _               (log/info (:file options))
+        int-set         (reading-log-file (:file options))
+        ;bit-set        (bitset  int-set)
+        bit-map         (bitmap  int-set)
+        hyper-loglog    (hll/into 
+                          (hll/create 0.03) 
+                          int-set)
+        bm-cardinality  (.cardinality bit-map)
+        hll-cardinality (hll/distinct-count hyper-loglog)
+        distance        (Math/abs (- bm-cardinality hll-cardinality))
+        percentage      (int (* (/ distance bm-cardinality) 100))
         ]
    ;(serde/serialize-file bit-set     "bs.test.dat") 
    (serde/serialize-file int-set      "set.test.dat")
    (serde/serialize-file bit-map      "bm.test.dat")
    (serde/serialize-file hyper-loglog "hll.test.dat")
-  (println (count int-set))
-  (println (.cardinality bit-map))
-  (println (hll/distinct-count hyper-loglog))
+  (log/info (str "count: " (count int-set)))
+  (log/info (str "bit-map cardinality: " (.cardinality bit-map)))
+  (log/info (str "hyperloglog count: " (hll/distinct-count hyper-loglog)))
+  (log/info (str "difference: " distance " error rate: " percentage "%"))
   ))
 

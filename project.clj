@@ -3,12 +3,21 @@
   :url "https://github.com/StreamBright/cardinale"
   :license {:name "Apache License 2.0 (Apache-2.0)" :url "http://www.apache.org/licenses/LICENSE-2.0"}
   :dependencies [
-      [org.clojure/clojure                "1.7.0"]
-      [com.google.guava/guava             "18.0" ]
-      [com.googlecode.javaewah/JavaEWAH   "1.0.8"]
-      [bigml/sketchy                      "0.3.1"]
+      [org.clojure/clojure                "1.7.0"   ]
+      [com.google.guava/guava             "18.0"    ]
+      [com.googlecode.javaewah/JavaEWAH   "1.0.8"   ]
+      [bigml/sketchy                      "0.3.1"   ]
+      [org.clojure/tools.logging          "0.3.1"   ]
+      [org.slf4j/slf4j-log4j12            "1.7.12"  ]
+      [log4j/log4j                        "1.2.17"  ]
+      [org.clojure/tools.cli              "0.3.3"   ]
   ]
   :exclusions [
+    javax.mail/mail
+    javax.jms/jms
+    com.sun.jdmk/jmxtools
+    com.sun.jmx/jmxri
+    jline/jline
   ]
   :plugins [
             [lein-ancient "0.6.7"]

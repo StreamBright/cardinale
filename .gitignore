@@ -10,3 +10,4 @@ pom.xml.asc
 *.jfr
 *.dat
 test_huge.log
+data/
