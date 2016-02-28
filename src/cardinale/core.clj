@@ -58,7 +58,10 @@
 (defn reading-log-file 
   [file] 
   (let [
-          file-lines      (fileio/lazy-lines file)
+          file-lines-raw  (fileio/lazy-lines file)
+          ;; guarding further processing
+          _               (if (:ok file-lines-raw) :ok (cli/exit 1 (:exception file-lines-raw)))
+          file-lines      (:ok file-lines-raw)
           split-entries   (map #(strn/split % #"\ ") file-lines)
           int-seq         (map #(indexing/get-index (nth % 3)) split-entries)
           int-set         (set int-seq) ]
